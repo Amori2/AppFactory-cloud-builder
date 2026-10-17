@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+<script>
+(function(){
+  window.addEventListener('error',function(e){console.warn('WV-Shield:',e.message);});
+  window.addEventListener('unhandledrejection',function(e){console.warn('WV-Shield:',e.reason);});
+  if(typeof window.Notification==='undefined'){
+    window.Notification=function(){};
+    window.Notification.permission='granted';
+    window.Notification.requestPermission=function(cb){if(cb)cb('granted');return Promise.resolve('granted');};
+  }
+  if(!('serviceWorker' in navigator)||location.protocol==='file:'){
+    try{Object.defineProperty(navigator,'serviceWorker',{value:{register:function(){return Promise.resolve({});},ready:Promise.resolve({}),getRegistrations:function(){return Promise.resolve([]);},addEventListener:function(){}},configurable:true});}catch(e){}
+  }
+  try{localStorage.setItem('__t','1');localStorage.removeItem('__t');}catch(e){
+    var m={};var s={getItem:function(k){return m.hasOwnProperty(k)?m[k]:null;},setItem:function(k,v){m[k]=String(v);},removeItem:function(k){delete m[k];},clear:function(){m={};}};
+    try{Object.defineProperty(window,'localStorage',{value:s});Object.defineProperty(window,'sessionStorage',{value:s});}catch(err){}
+  }
+  var op=history.pushState,or=history.replaceState;
+  history.pushState=function(s,t,u){try{return op.apply(this,arguments);}catch(e){}};
+  history.replaceState=function(s,t,u){try{return or.apply(this,arguments);}catch(e){}};
+  if(!navigator.clipboard)navigator.clipboard={};
+  if(!navigator.clipboard.writeText){
+    navigator.clipboard.writeText=function(t){return new Promise(function(res){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(a);res();});};
+  }
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    var sp = document.createElement('div');
+    sp.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;transition:opacity 0.4s ease;';
+    sp.innerHTML = '<div style="width:56px;height:56px;border:4px solid #349fd1;border-top-color:transparent;border-radius:50%;animation:w2aspin 0.8s linear infinite;margin-bottom:16px;"></div><div style="font-size:18px;font-weight:bold;">App Factory</div><style>@keyframes w2aspin{to{transform:rotate(360deg)}}</style>';
+    document.body.appendChild(sp);
+    setTimeout(function(){ sp.style.opacity='0'; setTimeout(function(){ sp.remove(); }, 400); }, 2000);
+  });
+})();
+</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web2APK Studio Pro | النسخة الاحترافية الشاملة</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Cairo', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #0b0f19;
+      color: #f1f5f9;
+    }
+    .panel {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 1rem;
+    }
+    .step-btn.active {
+      background: #10b981;
+      color: #052e16;
+      border-color: #10b981;
+      font-weight: 800;
+    }
+    .svg-icon-btn.selected {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Toast Container -->
+  <div id="toastBox" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Top Bar -->
+  <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 lg:px-8 py-3.5">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20">
+          <i data-lucide="cpu" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-extrabold text-white">Web2APK <span class="text-emerald-400">Studio Pro</span></h1>
+          <p class="text-[11px] text-slate-400">تحويل المواقع إلى تطبيقات أندرويد مع تنزيل مباشر ومولد أيقونات احترافي</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="togglePreviewBtn" type="button" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-2 transition">
+          <i data-lucide="smartphone" class="w-4 h-4 text-emerald-400"></i>
+          <span>معاينة الهاتف</span>
+        </button>
+        <button id="loadSampleBtn" type="button" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition">
+          <i data-lucide="code" class="w-4 h-4 text-cyan-400"></i>
+          <span>كود تجريبي</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Simulator Drawer Modal (Clean & Uncluttered) -->
+  <div id="simulatorModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="panel max-w-md w-full p-5 space-y-4 border border-slate-700 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <h3 class="text-sm font-extrabold text-white">محاكي شاشة التطبيق</h3>
+        </div>
+        <button id="closeSimModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="mx-auto w-[300px] h-[540px] rounded-[32px] bg-slate-950 border-4 border-slate-800 flex flex-col overflow-hidden shadow-2xl">
+        <div id="simStatusBar" class="h-7 bg-emerald-600 px-4 flex items-center justify-between text-[10px] text-white font-bold">
+          <span id="simTitleText">تطبيقي</span>
+          <span>100% 🔋</span>
+        </div>
+        <iframe id="simIframe" class="w-full flex-1 bg-white border-0"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Workspace -->
+  <main class="max-w-6xl mx-auto w-full px-4 lg:px-8 py-6 flex-1 space-y-6">
+
+    <!-- 4 Clear Steps Navigation -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <button type="button" onclick="goStep(1)" id="stepBtn-1" class="step-btn active py-3 px-4 rounded-xl border border-slate-800 bg-slate-900 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition">
+        <i data-lucide="file-code" class="w-4 h-4"></i>
+        <span>1. كود الموقع</span>
+      </button>
+      <button type="button" onclick="goStep(2)" id="stepBtn-2" class="step-btn py-3 px-4 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+        <span>2. مولد الأيقونة والهوية</span>
+      </button>
+      <button type="button" onclick="goStep(3)" id="stepBtn-3" class="step-btn py-3 px-4 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition">
+        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+        <span>3. الصلاحيات والخواص</span>
+      </button>
+      <button type="button" onclick="goStep(4)" id="stepBtn-4" class="step-btn py-3 px-4 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition">
+        <i data-lucide="download-cloud" class="w-4 h-4"></i>
+        <span>4. البناء وتنزيل APK</span>
+      </button>
+    </div>
+
+    <!-- ==================== STEP 1: HTML SOURCE ==================== -->
+    <section id="stepPanel-1" class="panel p-6 space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-base font-extrabold text-white">الخطوة 1: وضع كود الموقع أو رفع ملف HTML</h2>
+          <p class="text-xs text-slate-400 mt-0.5">الصق الكود البرمجي لموقعك أو ارفع ملف `.html` جاهز من جهازك</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="fileUploadInput" class="cursor-pointer px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-2 transition">
+            <i data-lucide="upload" class="w-4 h-4"></i>
+            <span>رفع ملف HTML من جهازك</span>
+          </label>
+          <input id="fileUploadInput" type="file" accept=".html,.htm" class="hidden" />
+          <button id="clearEditorBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 text-xs font-bold transition">
+            مسح الكود
+          </button>
+        </div>
+      </div>
+
+      <textarea id="htmlEditor" rows="14" dir="ltr" placeholder="<!DOCTYPE html>..." class="w-full rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:outline-none p-4 font-mono text-xs text-emerald-100 leading-relaxed"></textarea>
+
+      <div class="flex items-center justify-between pt-2">
+        <span class="text-xs text-emerald-400 flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>درع منع التجمد مفعّل تلقائياً لحماية كافة الأزرار والنوافذ</span>
+        </span>
+        <button type="button" onclick="goStep(2)" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition">
+          التالي: تصميم الأيقونة والهوية &larr;
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== STEP 2: PRO ICON GENERATOR & IDENTITY ==================== -->
+    <section id="stepPanel-2" class="panel p-6 space-y-6 hidden">
+      <div class="border-b border-slate-800 pb-4">
+        <h2 class="text-base font-extrabold text-white">الخطوة 2: معلومات التطبيق ومولّد الأيقونات الاحترافي</h2>
+        <p class="text-xs text-slate-400 mt-0.5">حدد اسم التطبيق، وصمّم أيقونة فيكتور هندسية احترافية أو ارفع شعاراً خاصاً بك</p>
+      </div>
+
+      <!-- App Info -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">اسم التطبيق (يظهر بالهاتف)</label>
+          <input id="appName" type="text" value="تطبيقي الاحترافي" class="w-full rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 px-3.5 py-2.5 text-sm text-white font-bold focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">معرّف الحزمة (Package ID)</label>
+          <input id="appPkg" type="text" dir="ltr" value="com.studio.proapp" class="w-full rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 px-3.5 py-2.5 text-sm text-emerald-300 font-mono focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">رقم الإصدار (Version)</label>
+          <input id="appVerName" type="text" dir="ltr" value="1.0.0" class="w-full rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">كود البناء (Build Code)</label>
+          <input id="appVerCode" type="number" dir="ltr" value="1" min="1" class="w-full rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none" />
+        </div>
+      </div>
+
+      <!-- Professional Vector Icon Studio -->
+      <div class="p-5 rounded-2xl bg-slate-950 border border-slate-800 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        
+        <!-- Live High-Res Preview -->
+        <div class="lg:col-span-4 flex flex-col items-center justify-center space-y-3 border-b lg:border-b-0 lg:border-l border-slate-800 pb-5 lg:pb-0 lg:pl-6">
+          <canvas id="iconCanvas" width="512" height="512" class="w-36 h-36 rounded-3xl shadow-2xl border border-slate-700"></canvas>
+          <div class="text-center">
+            <div class="text-xs font-bold text-white">معاينة الأيقونة بدقة فائقة</div>
+            <div class="text-[11px] text-slate-400">يتم توليد 5 مقاسات Mipmap تلقائياً</div>
+          </div>
+          <div class="flex flex-wrap justify-center gap-2 pt-1">
+            <label for="uploadCustomIcon" class="cursor-pointer px-3.5 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="image-plus" class="w-4 h-4"></i>
+              <span>رفع صورة من جهازك</span>
+            </label>
+            <input id="uploadCustomIcon" type="file" accept="image/*" class="hidden" />
+            <button id="resetVectorIconBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">
+              استخدام المولّد
+            </button>
+          </div>
+        </div>
+
+        <!-- Generator Controls -->
+        <div class="lg:col-span-8 space-y-5">
+          <!-- Color & Style Controls -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-400 mb-1">اللون الأساسي</label>
+              <input id="iconColor1" type="color" value="#059669" class="w-full h-9 rounded-lg bg-slate-900 border border-slate-700 p-1 cursor-pointer" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-400 mb-1">لون التدرج الثاني</label>
+              <input id="iconColor2" type="color" value="#0f172a" class="w-full h-9 rounded-lg bg-slate-900 border border-slate-700 p-1 cursor-pointer" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-400 mb-1">لون الرمز الداخلي</label>
+              <input id="iconFgColor" type="color" value="#34d399" class="w-full h-9 rounded-lg bg-slate-900 border border-slate-700 p-1 cursor-pointer" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-400 mb-1">حجم الرمز</label>
+              <input id="iconScale" type="range" min="35" max="75" value="52" class="w-full h-9 accent-emerald-500 cursor-pointer" />
+            </div>
+          </div>
+
+          <!-- Extra Badge / Text Options -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-200">
+              <input id="iconInnerFrame" type="checkbox" checked class="w-4 h-4 accent-emerald-500" />
+              <span>إطار هندسي داخلي (Tech Ring)</span>
+            </label>
+            <label class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-200">
+              <input id="iconTechGrid" type="checkbox" checked class="w-4 h-4 accent-emerald-500" />
+              <span>شبكة خلفية تقنية (Grid)</span>
+            </label>
+            <div>
+              <input id="iconCustomText" type="text" maxlength="3" placeholder="أو اكتب رمزاً نصياً (مثل PRO)" class="w-full h-full rounded-xl bg-slate-900 border border-slate-800 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <!-- Vector Icons Grid -->
+          <div class="space-y-2">
+            <div class="text-xs font-bold text-slate-300">اختر رمزاً هندسياً احترافياً (Vector Icons):</div>
+            <div id="vectorIconsContainer" class="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-48 overflow-y-auto p-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between pt-2">
+        <button type="button" onclick="goStep(1)" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition">
+          &rarr; السابق
+        </button>
+        <button type="button" onclick="goStep(3)" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition">
+          التالي: الصلاحيات والخواص المتقدمة &larr;
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== STEP 3: PERMISSIONS & ADVANCED CAPABILITIES ==================== -->
+    <section id="stepPanel-3" class="panel p-6 space-y-6 hidden">
+      <div class="border-b border-slate-800 pb-4">
+        <h2 class="text-base font-extrabold text-white">الخطوة 3: صلاحيات الجهاز والخواص المتقدمة للتطبيق</h2>
+        <p class="text-xs text-slate-400 mt-0.5">حدد الصلاحيات التي يحتاجها تطبيقك (يتم تفعيلها برمجياً داخل النظام وطلب الإذن من المستخدم تلقائياً)</p>
+      </div>
+
+      <!-- Hardware & System Permissions -->
+      <div class="space-y-3">
+        <h3 class="text-xs font-extrabold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="shield" class="w-4 h-4"></i>
+          <span>أولاً: صلاحيات الوصول للعتاد والنظام (Android Permissions)</span>
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <label class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex items-start gap-3 cursor-pointer transition">
+            <input id="permLocation" type="checkbox" class="mt-1 w-4 h-4 accent-emerald-500" />
+            <div class="text-xs">
+              <div class="font-bold text-white flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i> الموقع الجغرافي (GPS)</div>
+              <p class="text-slate-400 text-[11px] mt-0.5">تفعيل `ACCESS_FINE_LOCATION` ودعم الخرائط وتحديد الموقع الدقيق.</p>
+            </div>
+          </label>
+
+          <label class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex items-start gap-3 cursor-pointer transition">
+            <input id="permCamera" type="checkbox" class="mt-1 w-4 h-4 accent-emerald-500" />
+            <div class="text-xs">
+              <div class="font-bold text-white flex items-center gap-1.5"><i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-400"></i> الكاميرا والتصوير</div>
+              <p class="text-slate-400 text-[11px] mt-0.5">تفعيل الكاميرا الأمامية والخلفية ومسح الباركود QR داخل التطبيق.</p>
+            </div>
+          </label>
+
+          <label class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex items-start gap-3 cursor-pointer transition">
+            <input id="permMic" type="checkbox" class="mt-1 w-4 h-4 accent-emerald-500" />
+            <div class="text-xs">
+              <div class="font-bold text-white flex items-center gap-1.5"><i data-lucide="mic" class="w-3.5 h-3.5 text-amber-400"></i> المايكروفون وتسجيل الصوت</div>
+              <p class="text-slate-400 text-[11px] mt-0.5">تفعيل `RECORD_AUDIO` لدعم التسجيل الصوتي والأوامر الصوتية.</p>
+            </div>
+          </label>
+
+          <label class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex items-start gap-3 cursor-pointer transition">
+            <input id="permStorage" type="checkbox" checked class="mt-1 w-4 h-4 accent-emerald-500" />
+            <div class="text-xs">
+              <div class="font-bold text-white flex items-center gap-1.5"><i data-lucide="hard-drive" class="w-3.5 h-3.5 text-purple-400"></i> قراءة وحفظ الملفات والوسائط</div>
+              <p class="text-slate-400 text-[11px] mt-0.5">السماح برفع الملفات والصور وتنزيل المستندات إلى ذاكرة الهاتف.</p>
+            </div>
+          </label>
+
+          <label class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex items-start gap-3 cursor-pointer transition">
+            <input id="permNotifications" type="checkbox" checked class="mt-1 w-4 h-4 accent-emerald-500" />
+            <div class="text-xs">
+              <div class="font-bold text-white flex items-center gap-1.5"><i data-lucide="bell" class="w-3.5 h-3.5 text-rose-400"></i> الإشعارات والتنبيهات</div>
+              <p class="text-slate-400 text-[11px] mt-0.5">دعم إشعارات أندرويد 13+ (`POST_NOTIFICATIONS`) والتنبيهات.</p>
+            </div>
+          </label>
+
+          <label class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex items-start gap-3 cursor-pointer transition">
+            <input id="permVibrate" type="checkbox" checked class="mt-1 w-4 h-4 accent-emerald-500" />
+            <div class="text-xs">
+              <div class="font-bold text-white flex items-center gap-1.5"><i data-lucide="vibrate" class="w-3.5 h-3.5 text-teal-400"></i> الاهتزاز والبلوتوث</div>
+              <p class="text-slate-400 text-[11px] mt-0.5">دعم `navigator.vibrate` والاتصال بالأجهزة والطابعات الحرارية.</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Advanced App Behavior & UI Properties -->
+      <div class="space-y-3 pt-2">
+        <h3 class="text-xs font-extrabold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="settings-2" class="w-4 h-4"></i>
+          <span>ثانياً: إعدادات العرض وسلوك التطبيق المتقدمة</span>
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+            <label class="text-xs font-bold text-white block">اتجاه الشاشة (Screen Orientation)</label>
+            <select id="propOrientation" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-200 focus:outline-none">
+              <option value="unspecified">تلقائي حسب تدوير الهاتف (Auto)</option>
+              <option value="portrait">عمودي فقط (Portrait)</option>
+              <option value="landscape">أفقي فقط للألعاب والعروض (Landscape)</option>
+            </select>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+            <label class="text-xs font-bold text-white block">لون شريط الحالة العلوي (Status Bar)</label>
+            <input id="propStatusBarColor" type="color" value="#090d16" class="w-full h-9 rounded-lg bg-slate-900 border border-slate-700 p-1 cursor-pointer" />
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+            <label class="text-xs font-bold text-white block">شاشة الترحيب عند الفتح (Splash Screen)</label>
+            <select id="propSplashDelay" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-200 focus:outline-none">
+              <option value="1200">تفعيل شاشة ترحيب أنيقة (1.2 ثانية)</option>
+              <option value="2000">تفعيل شاشة ترحيب (ثانيتان)</option>
+              <option value="0">بدون شاشة ترحيب (فتح فوري)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+          <label class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-200">
+            <input id="propFullScreen" type="checkbox" class="w-4 h-4 accent-emerald-500" />
+            <span>ملء الشاشة بالكامل (إخفاء الشريط العلوي)</span>
+          </label>
+
+          <label class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-200">
+            <input id="propKeepScreenOn" type="checkbox" checked class="w-4 h-4 accent-emerald-500" />
+            <span>منع انطفاء الشاشة أثناء استخدام التطبيق</span>
+          </label>
+
+          <label class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-200">
+            <input id="propZoomControls" type="checkbox" class="w-4 h-4 accent-emerald-500" />
+            <span>السماح بتكبير/تصغير الصفحة بالإصبعين (Zoom)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex justify-between pt-2">
+        <button type="button" onclick="goStep(2)" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition">
+          &rarr; السابق
+        </button>
+        <button type="button" onclick="goStep(4)" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition">
+          التالي: البناء وتنزيل APK المباشر &larr;
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== STEP 4: ONE-CLICK BUILD & DIRECT APK DOWNLOAD ==================== -->
+    <section id="stepPanel-4" class="panel p-6 space-y-6 hidden">
+      <div class="border-b border-slate-800 pb-4">
+        <h2 class="text-base font-extrabold text-white">الخطوة 4: بناء التطبيق وتنزيل ملف الـ APK مباشرة إلى جهازك</h2>
+        <p class="text-xs text-slate-400 mt-0.5">لا داعي للبحث داخل موقع GitHub بعد الآن! المنصة ستقوم ببناء التطبيق وجلب ملف الـ `.apk` النهائي لك هنا مباشرة</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">رمز GitHub الشخصي (Token: repo + workflow)</label>
+          <input id="ghToken" type="password" dir="ltr" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxx" class="w-full rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 px-3.5 py-2.5 text-xs font-mono text-emerald-300 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">اسم المستودع السحابي (Repository)</label>
+          <input id="ghRepo" type="text" dir="ltr" value="web2apk-cloud-builder" class="w-full rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 px-3.5 py-2.5 text-xs font-mono text-slate-200 focus:outline-none" />
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <button id="startBuildBtn" type="button" class="flex-1 min-w-[260px] py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2.5 transition">
+          <i data-lucide="rocket" class="w-5 h-5"></i>
+          <span>بدء بناء التطبيق وتجهيز التنزيل المباشر (.APK)</span>
+        </button>
+
+        <button id="exportZipBtn" type="button" class="py-4 px-5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-2 transition">
+          <i data-lucide="folder-down" class="w-4 h-4 text-cyan-400"></i>
+          <span>تنزيل كود مشروع Android (.zip)</span>
+        </button>
+      </div>
+
+      <!-- Live Build Monitor & Direct Download Box -->
+      <div id="buildMonitorBox" class="hidden p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div id="buildSpinner" class="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+            <span id="buildStateLabel" class="text-xs sm:text-sm font-extrabold text-emerald-400">جاري التحضير...</span>
+          </div>
+          <span id="buildPercentBadge" class="text-xs font-mono font-bold text-slate-300">0%</span>
+        </div>
+
+        <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden">
+          <div id="buildBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 w-0 transition-all duration-500"></div>
+        </div>
+
+        <!-- DIRECT DOWNLOAD READY PANEL -->
+        <div id="directDownloadPanel" class="hidden p-5 rounded-2xl bg-emerald-950/60 border-2 border-emerald-500 space-y-3 text-center">
+          <div class="text-base font-black text-white">🎉 اكتمل بناء تطبيقك بنجاح 100%!</div>
+          <p class="text-xs text-emerald-200">اضغط على الزر الأخضر بالأسفل لتنزيل ملف <code class="font-mono font-bold">.apk</code> مباشرة على جهازك وتثبيته فوراً:</p>
+          <div class="flex flex-wrap items-center justify-center gap-3 pt-1">
+            <button id="downloadDirectApkBtn" type="button" class="px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/30 flex items-center gap-2.5 transition">
+              <i data-lucide="download" class="w-5 h-5"></i>
+              <span>تنزيل ملف APK المباشر على جهازك الآن</span>
+            </button>
+            <a id="releaseFallbackLink" href="#" target="_blank" class="px-4 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-2 transition">
+              <i data-lucide="external-link" class="w-4 h-4 text-cyan-400"></i>
+              <span>صفحة الإصدار على GitHub</span>
+            </a>
+          </div>
+        </div>
+
+        <pre id="buildLogOutput" dir="ltr" class="text-[11px] font-mono text-slate-400 bg-slate-900/90 p-3.5 rounded-xl max-h-40 overflow-y-auto whitespace-pre-wrap"></pre>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    lucide.createIcons();
+
+    // =========================================================================
+    // 1. PROFESSIONAL VECTOR SVG ICONS LIBRARY (NO EMOJIS)
+    // =========================================================================
+    const PRO_VECTOR_ICONS = [
+      { id: 'cpu', label: 'معالج CPU', paths: ['M4 4h16v16H4z', 'M9 9h6v6H9z', 'M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3'] },
+      { id: 'terminal', label: 'برمجة / طرفية', paths: ['M4 17l6-6-6-6', 'M12 19h8'] },
+      { id: 'code', label: 'تطوير كود', paths: ['M16 18l6-6-6-6', 'M8 6l-6 6 6 6', 'M14 4l-4 16'] },
+      { id: 'layers', label: 'تصميم 3D', paths: ['M12 2L2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'] },
+      { id: 'shield', label: 'حماية وأمان', paths: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'M9 12l2 2 4-4'] },
+      { id: 'database', label: 'قاعدة بيانات', paths: ['M3 5c0-1.66 4.03-3 9-3s9 1.34 9 3-4.03 3-9 3-9-1.34-9-3z', 'M21 12c0 1.66-4 3-9 3s-9-1.34-9-3', 'M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5'] },
+      { id: 'pulse', label: 'طبي / نبض', paths: ['M22 12h-4l-3 9L9 3l-3 9H2'] },
+      { id: 'compass', label: 'ملاحة GPS', paths: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z'] },
+      { id: 'sliders', label: 'تحكم وإعدادات', paths: ['M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'] },
+      { id: 'zap', label: 'طاقة وسرعة', paths: ['M13 2L3 14h9l-1 8 10-12h-9l1-8z'] },
+      { id: 'server', label: 'خادم سحابي', paths: ['M2 2h20v8H2z', 'M2 14h20v8H2z', 'M6 6h.01M6 18h.01'] },
+      { id: 'chart', label: 'تحليلات', paths: ['M18 20V10', 'M12 20V4', 'M6 20v-6'] },
+      { id: 'camera', label: 'كاميرا واستوديو', paths: ['M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z', 'M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'] },
+      { id: 'mic', label: 'صوتيات', paths: ['M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z', 'M19 10v2a7 7 0 0 1-14 0v-2', 'M12 19v4M8 23h8'] },
+      { id: 'wrench', label: 'صيانة وهندسة', paths: ['M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'] },
+      { id: 'globe', label: 'شبكة عالمية', paths: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'M2 12h20', 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'] },
+      { id: 'lock', label: 'تشفير', paths: ['M3 11h18v11H3z', 'M7 11V7a5 5 0 0 1 10 0v4'] },
+      { id: 'book', label: 'موسوعة وتعليم', paths: ['M4 19.5A2.5 2.5 0 0 1 6.5 17H20', 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'] },
+      { id: 'dumbbell', label: 'لياقة وتدريب', paths: ['M6.5 6.5l11 11', 'M21 21l-1-1M3 3l1 1M18 22l4-4M2 6l4-4M3 10l7-7M14 21l7-7'] },
+      { id: 'briefcase', label: 'إدارة وأعمال', paths: ['M2 7h20v14H2z', 'M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16'] },
+      { id: 'cloud', label: 'تخزين سحابي', paths: ['M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z'] },
+      { id: 'smartphone', label: 'تطبيق جوال', paths: ['M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z', 'M12 18h.01'] },
+      { id: 'Navigation', label: 'توجيه', paths: ['M3 11l19-9-9 19-2-8-8-2z'] },
+      { id: 'award', label: 'احترافي', paths: ['M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14z', 'M8.21 13.89L7 23l5-3 5 3-1.21-9.12'] }
+    ];
+
+    let selectedVectorIcon = PRO_VECTOR_ICONS[0];
+    let uploadedCustomImage = null;
+
+    // Render Vector Icon Buttons
+    const vectorGrid = document.getElementById('vectorIconsContainer');
+    PRO_VECTOR_ICONS.forEach((item, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.title = item.label;
+      btn.className = `svg-icon-btn p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/60 flex flex-col items-center justify-center gap-1 text-slate-300 transition ${idx === 0 ? 'selected' : ''}`;
+      const pathsSvg = item.paths.map(d => `<path d="${d}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`).join('');
+      btn.innerHTML = `
+        <svg viewBox="0 0 24 24" class="w-5 h-5">${pathsSvg}</svg>
+        <span class="text-[9px] font-bold truncate max-w-full">${item.label}</span>
+      `;
+      btn.addEventListener('click', () => {
+        uploadedCustomImage = null;
+        document.getElementById('iconCustomText').value = '';
+        selectedVectorIcon = item;
+        document.querySelectorAll('.svg-icon-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        renderIconCanvas();
+      });
+      vectorGrid.appendChild(btn);
+    });
+
+    // High-Res Canvas Icon Renderer (512x512)
+    const iconCanvas = document.getElementById('iconCanvas');
+    function renderIconCanvas() {
+      const ctx = iconCanvas.getContext('2d');
+      const size = 512;
+      ctx.clearRect(0, 0, size, size);
+
+      if (uploadedCustomImage) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(0, 0, size, size, 110);
+        ctx.clip();
+        ctx.drawImage(uploadedCustomImage, 0, 0, size, size);
+        ctx.restore();
+        return;
+      }
+
+      const c1 = document.getElementById('iconColor1').value || '#059669';
+      const c2 = document.getElementById('iconColor2').value || '#0f172a';
+      const fg = document.getElementById('iconFgColor').value || '#34d399';
+      const scalePct = parseInt(document.getElementById('iconScale').value || '52', 10) / 100;
+      const showFrame = document.getElementById('iconInnerFrame').checked;
+      const showGrid = document.getElementById('iconTechGrid').checked;
+      const customTxt = (document.getElementById('iconCustomText').value || '').trim();
+
+      ctx.save();
+      // Rounded Squircle Background
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, 112);
+      ctx.clip();
+
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, c1);
+      grad.addColorStop(1, c2);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+
+      // Subtle Tech Grid
+      if (showGrid) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 2;
+        for (let x = 64; x < size; x += 64) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, x); ctx.lineTo(size, x); ctx.stroke();
+        }
+      }
+
+      // Inner Tech Frame
+      if (showFrame) {
+        ctx.strokeStyle = fg;
+        ctx.globalAlpha = 0.22;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.roundRect(46, 46, size - 92, size - 92, 80);
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+      }
+
+      // Draw Custom Monogram or Vector Path
+      if (customTxt) {
+        ctx.fillStyle = fg;
+        ctx.font = `900 ${Math.round(size * scalePct * 0.65)}px Cairo, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(customTxt, size / 2, size / 2 + 8);
+      } else if (selectedVectorIcon) {
+        const iconBoxSize = size * scalePct;
+        const scale = iconBoxSize / 24;
+        const offset = (size - iconBoxSize) / 2;
+
+        ctx.save();
+        ctx.translate(offset, offset);
+        ctx.scale(scale, scale);
+        ctx.strokeStyle = fg;
+        ctx.lineWidth = 2.1;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        selectedVectorIcon.paths.forEach(pathStr => {
+          const p = new Path2D(pathStr);
+          ctx.stroke(p);
+        });
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    ['iconColor1', 'iconColor2', 'iconFgColor', 'iconScale', 'iconInnerFrame', 'iconTechGrid', 'iconCustomText'].forEach(id => {
+      document.getElementById(id).addEventListener('input', renderIconCanvas);
+    });
+
+    document.getElementById('uploadCustomIcon').addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          uploadedCustomImage = img;
+          renderIconCanvas();
+          toast('تم تطبيق صورتك كأيقونة للتطبيق!');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(f);
+    });
+
+    document.getElementById('resetVectorIconBtn').addEventListener('click', () => {
+      uploadedCustomImage = null;
+      renderIconCanvas();
+    });
+
+    function getResizedIconBase64(px) {
+      const c = document.createElement('canvas');
+      c.width = px;
+      c.height = px;
+      c.getContext('2d').drawImage(iconCanvas, 0, 0, px, px);
+      return c.toDataURL('image/png').split(',')[1];
+    }
+
+    // =========================================================================
+    // 2. NAVIGATION & SIMULATOR
+    // =========================================================================
+    function toast(msg, isError = false) {
+      const box = document.getElementById('toastBox');
+      const d = document.createElement('div');
+      d.className = `${isError ? 'bg-rose-600 border-rose-400' : 'bg-emerald-600 border-emerald-400'} border text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl pointer-events-auto`;
+      d.textContent = msg;
+      box.appendChild(d);
+      setTimeout(() => d.remove(), 4000);
+    }
+
+    window.goStep = function(n) {
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById('stepPanel-' + i).classList.toggle('hidden', i !== n);
+        document.getElementById('stepBtn-' + i).classList.toggle('active', i === n);
+      }
+    };
+
+    const SAMPLE_CODE = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تطبيق احترافي</title>
+  <style>
+    body { font-family: sans-serif; background: #0b0f19; color: #f8fafc; margin: 0; padding: 20px; text-align: center; }
+    .box { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 20px; margin-top: 16px; }
+    button { background: #10b981; color: #052e16; border: none; padding: 12px 18px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 14px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>لوحة التحكم الذكية</h2>
+  <div class="box">
+    <p id="statusTxt">اضغط على الأزرار لاختبار عمل الجافاسكربت والصلاحيات</p>
+    <button onclick="testAction()">تنفيذ إجراء فوري (+1)</button>
+    <button onclick="testGeo()" style="background:#38bdf8">اختبار صلاحية الموقع GPS</button>
+  </div>
+  <script>
+    let counter = 0;
+    function testAction() {
+      counter++;
+      document.getElementById('statusTxt').innerText = 'تم الضغط بنجاح: ' + counter + ' مرة';
+    }
+    function testGeo() {
+      if (!navigator.geolocation) { alert('غير مدعوم'); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => alert('تم جلب الإحداثيات: ' + pos.coords.latitude.toFixed(4)),
+        err => alert('تنبيه الموقع: ' + err.message)
+      );
+    }
+  <\/script>
+</body>
+</html>`;
+
+    const htmlEditor = document.getElementById('htmlEditor');
+    htmlEditor.value = SAMPLE_CODE;
+
+    document.getElementById('loadSampleBtn').addEventListener('click', () => {
+      htmlEditor.value = SAMPLE_CODE;
+      toast('تم إدراج الكود التجريبي');
+    });
+    document.getElementById('clearEditorBtn').addEventListener('click', () => {
+      htmlEditor.value = '';
+    });
+    document.getElementById('fileUploadInput').addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = (ev) => {
+        htmlEditor.value = ev.target.result;
+        toast('تم تحميل ملف HTML بنجاح!');
+      };
+      r.readAsText(f, 'UTF-8');
+    });
+
+    document.getElementById('togglePreviewBtn').addEventListener('click', () => {
+      document.getElementById('simTitleText').textContent = document.getElementById('appName').value || 'تطبيقي';
+      document.getElementById('simStatusBar').style.backgroundColor = document.getElementById('propStatusBarColor').value || '#090d16';
+      document.getElementById('simIframe').srcdoc = prepareSafeHtml(htmlEditor.value);
+      document.getElementById('simulatorModal').classList.remove('hidden');
+      document.getElementById('simulatorModal').classList.add('flex');
+    });
+    document.getElementById('closeSimModalBtn').addEventListener('click', () => {
+      document.getElementById('simulatorModal').classList.add('hidden');
+      document.getElementById('simulatorModal').classList.remove('flex');
+    });
+
+    // =========================================================================
+    // 3. WEBVIEW ANTI-FREEZE SHIELD & SPLASH SCREEN INJECTOR
+    // =========================================================================
+    function prepareSafeHtml(rawHtml) {
+      const splashTime = parseInt(document.getElementById('propSplashDelay').value || '0', 10);
+      const appTitle = (document.getElementById('appName').value || 'تطبيقي').replace(/[<>&"']/g, '');
+      const bgCol = document.getElementById('iconColor2').value || '#0b0f19';
+      const accentCol = document.getElementById('iconFgColor').value || '#10b981';
+
+      const shieldAndSplash = `<script>
+(function(){
+  window.addEventListener('error',function(e){console.warn('WV-Shield:',e.message);});
+  window.addEventListener('unhandledrejection',function(e){console.warn('WV-Shield:',e.reason);});
+  if(typeof window.Notification==='undefined'){
+    window.Notification=function(){};
+    window.Notification.permission='granted';
+    window.Notification.requestPermission=function(cb){if(cb)cb('granted');return Promise.resolve('granted');};
+  }
+  if(!('serviceWorker' in navigator)||location.protocol==='file:'){
+    try{Object.defineProperty(navigator,'serviceWorker',{value:{register:function(){return Promise.resolve({});},ready:Promise.resolve({}),getRegistrations:function(){return Promise.resolve([]);},addEventListener:function(){}},configurable:true});}catch(e){}
+  }
+  try{localStorage.setItem('__t','1');localStorage.removeItem('__t');}catch(e){
+    var m={};var s={getItem:function(k){return m.hasOwnProperty(k)?m[k]:null;},setItem:function(k,v){m[k]=String(v);},removeItem:function(k){delete m[k];},clear:function(){m={};}};
+    try{Object.defineProperty(window,'localStorage',{value:s});Object.defineProperty(window,'sessionStorage',{value:s});}catch(err){}
+  }
+  var op=history.pushState,or=history.replaceState;
+  history.pushState=function(s,t,u){try{return op.apply(this,arguments);}catch(e){}};
+  history.replaceState=function(s,t,u){try{return or.apply(this,arguments);}catch(e){}};
+  if(!navigator.clipboard)navigator.clipboard={};
+  if(!navigator.clipboard.writeText){
+    navigator.clipboard.writeText=function(t){return new Promise(function(res){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(a);res();});};
+  }
+  ${splashTime > 0 ? `
+  document.addEventListener('DOMContentLoaded', function() {
+    var sp = document.createElement('div');
+    sp.style.cssText = 'position:fixed;inset:0;z-index:999999;background:${bgCol};display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;transition:opacity 0.4s ease;';
+    sp.innerHTML = '<div style="width:56px;height:56px;border:4px solid ${accentCol};border-top-color:transparent;border-radius:50%;animation:w2aspin 0.8s linear infinite;margin-bottom:16px;"></div><div style="font-size:18px;font-weight:bold;">${appTitle}</div><style>@keyframes w2aspin{to{transform:rotate(360deg)}}</style>';
+    document.body.appendChild(sp);
+    setTimeout(function(){ sp.style.opacity='0'; setTimeout(function(){ sp.remove(); }, 400); }, ${splashTime});
+  });` : ''}
+})();
+<\/script>`;
+
+      let html = String(rawHtml || SAMPLE_CODE);
+      if (/<head[^>]*>/i.test(html)) {
+        html = html.replace(/<head[^>]*>/i, function(m) { return m + '\n' + shieldAndSplash; });
+      } else {
+        html = shieldAndSplash + '\n' + html;
+      }
+      return html;
+    }
+
+    // =========================================================================
+    // 4. ANDROID PROJECT BUILDER WITH FULL PERMISSIONS & CAPABILITIES
+    // =========================================================================
+    function generateAndroidProject() {
+      const appName = (document.getElementById('appName').value || 'MyApp').trim().replace(/[<>&"']/g, '');
+      const pkg = (document.getElementById('appPkg').value || 'com.studio.proapp').trim().replace(/[^a-zA-Z0-9_.]/g, '');
+      const verName = (document.getElementById('appVerName').value || '1.0.0').trim();
+      const verCode = parseInt(document.getElementById('appVerCode').value || '1', 10) || 1;
+      const pkgPath = pkg.replace(/\./g, '/');
+
+      // Permissions
+      const pLoc = document.getElementById('permLocation').checked;
+      const pCam = document.getElementById('permCamera').checked;
+      const pMic = document.getElementById('permMic').checked;
+      const pStore = document.getElementById('permStorage').checked;
+      const pNotif = document.getElementById('permNotifications').checked;
+      const pVib = document.getElementById('permVibrate').checked;
+
+      // Properties
+      const orientation = document.getElementById('propOrientation').value;
+      const statusBarHex = document.getElementById('propStatusBarColor').value || '#090d16';
+      const isFull = document.getElementById('propFullScreen').checked;
+      const keepOn = document.getElementById('propKeepScreenOn').checked;
+      const allowZoom = document.getElementById('propZoomControls').checked;
+
+      const manifestPerms = [
+        '<uses-permission android:name="android.permission.INTERNET" />',
+        '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />'
+      ];
+      const runtimePermsJava = [];
+
+      if (pLoc) {
+        manifestPerms.push('<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />');
+        manifestPerms.push('<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />');
+        runtimePermsJava.push('"android.permission.ACCESS_FINE_LOCATION"', '"android.permission.ACCESS_COARSE_LOCATION"');
+      }
+      if (pCam) {
+        manifestPerms.push('<uses-permission android:name="android.permission.CAMERA" />');
+        manifestPerms.push('<uses-feature android:name="android.hardware.camera" android:required="false" />');
+        runtimePermsJava.push('"android.permission.CAMERA"');
+      }
+      if (pMic) {
+        manifestPerms.push('<uses-permission android:name="android.permission.RECORD_AUDIO" />');
+        manifestPerms.push('<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />');
+        runtimePermsJava.push('"android.permission.RECORD_AUDIO"');
+      }
+      if (pStore) {
+        manifestPerms.push('<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />');
+        manifestPerms.push('<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />');
+        runtimePermsJava.push('"android.permission.READ_EXTERNAL_STORAGE"');
+      }
+      if (pNotif) {
+        manifestPerms.push('<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />');
+        runtimePermsJava.push('"android.permission.POST_NOTIFICATIONS"');
+      }
+      if (pVib) {
+        manifestPerms.push('<uses-permission android:name="android.permission.VIBRATE" />');
+        manifestPerms.push('<uses-permission android:name="android.permission.BLUETOOTH" />');
+        manifestPerms.push('<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />');
+      }
+
+      const manifestXml = `<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="${pkg}">
+
+    ${manifestPerms.join('\n    ')}
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="${appName}"
+        android:usesCleartextTraffic="true"
+        android:hardwareAccelerated="true"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="${orientation}"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>`;
+
+      const mainActivityJava = `package ${pkg};
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.webkit.ConsoleMessage;
+import android.webkit.DownloadListener;
+import android.webkit.GeolocationPermissions;
+import android.webkit.JavascriptInterface;
+import android.webkit.JsPromptResult;
+import android.webkit.JsResult;
+import android.webkit.PermissionRequest;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.EditText;
+import android.widget.Toast;
+import java.util.ArrayList;
+
+public class MainActivity extends Activity {
+    private WebView webView;
+    private ValueCallback<Uri[]> filePathCallback;
+    private static final int FILE_CHOOSER_CODE = 1001;
+    private static final int PERMISSION_REQ_CODE = 1002;
+
+    @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        ${isFull ? 'getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);' : ''}
+        ${keepOn ? 'getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);' : ''}
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(Color.parseColor("${statusBarHex}"));
+        }
+
+        requestNeededPermissions();
+
+        webView = new WebView(this);
+        webView.setFocusable(true);
+        webView.setFocusableInTouchMode(true);
+        setContentView(webView);
+
+        WebSettings ws = webView.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setDatabaseEnabled(true);
+        ws.setGeolocationEnabled(true);
+        ws.setAllowFileAccess(true);
+        ws.setAllowContentAccess(true);
+        ws.setAllowFileAccessFromFileURLs(true);
+        ws.setAllowUniversalAccessFromFileURLs(true);
+        ws.setJavaScriptCanOpenWindowsAutomatically(true);
+        ws.setMediaPlaybackRequiresUserGesture(false);
+        ws.setLoadWithOverviewMode(true);
+        ws.setUseWideViewPort(true);
+        ws.setBuiltInZoomControls(${allowZoom});
+        ws.setDisplayZoomControls(false);
+        ws.setSupportZoom(${allowZoom});
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        }
+
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        webView.addJavascriptInterface(new WebAppBridge(this), "AndroidBridge");
+        webView.addJavascriptInterface(new WebAppBridge(this), "Android");
+
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    return handleUri(request.getUrl().toString());
+                }
+                return false;
+            }
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return handleUri(url);
+            }
+            private boolean handleUri(String url) {
+                if (url == null) return false;
+                if (url.startsWith("file://") || url.startsWith("about:") ||
+                    url.startsWith("javascript:") || url.startsWith("data:") ||
+                    url.startsWith("blob:") || url.startsWith("http://") ||
+                    url.startsWith("https://")) {
+                    return false;
+                }
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                } catch (Exception ignored) {}
+                return true;
+            }
+        });
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onJsAlert(WebView view, String url, String message, final JsResult result) {
+                if (isFinishing()) { result.cancel(); return true; }
+                new AlertDialog.Builder(MainActivity.this)
+                    .setMessage(message)
+                    .setPositiveButton("حسناً", new DialogInterface.OnClickListener() {
+                        @Override public void onClick(DialogInterface d, int w) { result.confirm(); }
+                    })
+                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override public void onCancel(DialogInterface d) { result.cancel(); }
+                    }).show();
+                return true;
+            }
+
+            @Override
+            public boolean onJsConfirm(WebView view, String url, String message, final JsResult result) {
+                if (isFinishing()) { result.cancel(); return true; }
+                new AlertDialog.Builder(MainActivity.this)
+                    .setMessage(message)
+                    .setPositiveButton("نعم", new DialogInterface.OnClickListener() {
+                        @Override public void onClick(DialogInterface d, int w) { result.confirm(); }
+                    })
+                    .setNegativeButton("إلغاء", new DialogInterface.OnClickListener() {
+                        @Override public void onClick(DialogInterface d, int w) { result.cancel(); }
+                    })
+                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override public void onCancel(DialogInterface d) { result.cancel(); }
+                    }).show();
+                return true;
+            }
+
+            @Override
+            public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, final JsPromptResult result) {
+                if (isFinishing()) { result.cancel(); return true; }
+                final EditText input = new EditText(MainActivity.this);
+                input.setText(defaultValue != null ? defaultValue : "");
+                new AlertDialog.Builder(MainActivity.this)
+                    .setMessage(message)
+                    .setView(input)
+                    .setPositiveButton("موافق", new DialogInterface.OnClickListener() {
+                        @Override public void onClick(DialogInterface d, int w) { result.confirm(input.getText().toString()); }
+                    })
+                    .setNegativeButton("إلغاء", new DialogInterface.OnClickListener() {
+                        @Override public void onClick(DialogInterface d, int w) { result.cancel(); }
+                    })
+                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override public void onCancel(DialogInterface d) { result.cancel(); }
+                    }).show();
+                return true;
+            }
+
+            @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    request.grant(request.getResources());
+                }
+            }
+
+            @Override
+            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                callback.invoke(origin, true, false);
+            }
+
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage cm) { return true; }
+
+            @Override
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                if (MainActivity.this.filePathCallback != null) {
+                    MainActivity.this.filePathCallback.onReceiveValue(null);
+                }
+                MainActivity.this.filePathCallback = filePathCallback;
+                try {
+                    Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                    i.addCategory(Intent.CATEGORY_OPENABLE);
+                    i.setType("*/*");
+                    startActivityForResult(Intent.createChooser(i, "اختر ملفاً"), FILE_CHOOSER_CODE);
+                } catch (Exception e) {
+                    MainActivity.this.filePathCallback = null;
+                    return false;
+                }
+                return true;
+            }
+        });
+
+        webView.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                } catch (Exception ignored) {}
+            }
+        });
+
+        webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private void requestNeededPermissions() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+        String[] perms = new String[]{ ${runtimePermsJava.join(', ')} };
+        ArrayList<String> needed = new ArrayList<>();
+        for (String p : perms) {
+            if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(p);
+            }
+        }
+        if (!needed.isEmpty()) {
+            requestPermissions(needed.toArray(new String[0]), PERMISSION_REQ_CODE);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FILE_CHOOSER_CODE && filePathCallback != null) {
+            Uri[] results = null;
+            if (resultCode == Activity.RESULT_OK && data != null && data.getDataString() != null) {
+                results = new Uri[]{Uri.parse(data.getDataString())};
+            }
+            filePathCallback.onReceiveValue(results);
+            filePathCallback = null;
+        }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && webView != null && webView.canGoBack()) {
+            webView.goBack();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    public static class WebAppBridge {
+        private final Activity activity;
+        public WebAppBridge(Activity activity) { this.activity = activity; }
+        @JavascriptInterface
+        public void showToast(String msg) {
+            Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show();
+        }
+    }
+}`;
+
+      const workflowYml = `name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Build APK
+        run: gradle assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Web2APK-Direct-Package
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish Direct Release APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk
+          name: "Latest Compiled APK"
+          files: app/build/outputs/apk/debug/app-debug.apk`;
+
+      return {
+        'settings.gradle': `pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }\nrootProject.name = "Web2APKApp"\ninclude ':app'`,
+        'build.gradle': `plugins { id 'com.android.application' version '8.2.2' apply false }`,
+        'gradle.properties': `org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=true`,
+        'app/build.gradle': `plugins { id 'com.android.application' }\nandroid {\n  namespace '${pkg}'\n  compileSdk 34\n  defaultConfig {\n    applicationId "${pkg}"\n    minSdk 23\n    targetSdk 34\n    versionCode ${verCode}\n    versionName "${verName}"\n  }\n  compileOptions {\n    sourceCompatibility JavaVersion.VERSION_1_8\n    targetCompatibility JavaVersion.VERSION_1_8\n  }\n}\ndependencies {}`,
+        'app/src/main/AndroidManifest.xml': manifestXml,
+        [`app/src/main/java/${pkgPath}/MainActivity.java`]: mainActivityJava,
+        'app/src/main/assets/index.html': prepareSafeHtml(htmlEditor.value),
+        '.github/workflows/build-apk.yml': workflowYml,
+        icons: {
+          'app/src/main/res/mipmap-mdpi/ic_launcher.png': getResizedIconBase64(48),
+          'app/src/main/res/mipmap-hdpi/ic_launcher.png': getResizedIconBase64(72),
+          'app/src/main/res/mipmap-xhdpi/ic_launcher.png': getResizedIconBase64(96),
+          'app/src/main/res/mipmap-xxhdpi/ic_launcher.png': getResizedIconBase64(144),
+          'app/src/main/res/mipmap-xxxhdpi/ic_launcher.png': getResizedIconBase64(192),
+        }
+      };
+    }
+
+    // Export Local ZIP
+    document.getElementById('exportZipBtn').addEventListener('click', async () => {
+      const proj = generateAndroidProject();
+      const zip = new JSZip();
+      Object.entries(proj).forEach(([k, v]) => { if (k !== 'icons') zip.file(k, v); });
+      Object.entries(proj.icons).forEach(([k, b64]) => zip.file(k, b64, { base64: true }));
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'Android-Project.zip';
+      a.click();
+      toast('تم تنزيل ملف المشروع المضغوط بنجاح!');
+    });
+
+    // =========================================================================
+    // 5. SINGLE-COMMIT PUSH + AUTO-POLLING + DIRECT APK DOWNLOAD IN BROWSER
+    // =========================================================================
+    let compiledApkBlobUrl = null;
+
+    function logMsg(txt) {
+      const pre = document.getElementById('buildLogOutput');
+      pre.textContent += `[${new Date().toLocaleTimeString()}] ${txt}\n`;
+      pre.scrollTop = pre.scrollHeight;
+    }
+
+    function updateProgress(pct, label) {
+      document.getElementById('buildBar').style.width = pct + '%';
+      document.getElementById('buildPercentBadge').textContent = pct + '%';
+      if (label) document.getElementById('buildStateLabel').textContent = label;
+    }
+
+    function toBase64Utf8(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+
+    document.getElementById('startBuildBtn').addEventListener('click', async () => {
+      const token = (document.getElementById('ghToken').value || '').trim();
+      const repo = (document.getElementById('ghRepo').value || 'web2apk-cloud-builder').trim();
+      if (!token) {
+        toast('يرجى إدخال رمز GitHub Token أولاً', true);
+        return;
+      }
+      localStorage.setItem('w2a_gh_token', token);
+
+      document.getElementById('buildMonitorBox').classList.remove('hidden');
+      document.getElementById('directDownloadPanel').classList.add('hidden');
+      document.getElementById('buildSpinner').classList.remove('hidden');
+      document.getElementById('buildLogOutput').textContent = '';
+
+      const headers = {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      };
+
+      try {
+        updateProgress(10, 'جاري الاتصال بحسابك في GitHub...');
+        const uRes = await fetch('https://api.github.com/user', { headers });
+        if (!uRes.ok) throw new Error('رمز GitHub غير صالح، تأكد من صلاحيات repo و workflow');
+        const user = await uRes.json();
+        const owner = user.login;
+        logMsg(`Connected to GitHub user: ${owner}`);
+
+        updateProgress(20, 'جاري التحقق من مستودع البناء...');
+        let rRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+        if (rRes.status === 404) {
+          logMsg(`Creating repository ${repo}...`);
+          rRes = await fetch('https://api.github.com/user/repos', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ name: repo, private: false, auto_init: true })
+          });
+          await new Promise(r => setTimeout(r, 3000));
+        }
+        const repoData = await rRes.json();
+        const branch = repoData.default_branch || 'main';
+
+        updateProgress(35, 'جاري حزم جميع الملفات والأيقونات في دفعة واحدة...');
+        const proj = generateAndroidProject();
+
+        // Get latest commit SHA
+        const refRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${branch}`, { headers });
+        const refData = await refRes.json();
+        const latestCommitSha = refData.object.sha;
+        const commitRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/commits/${latestCommitSha}`, { headers });
+        const commitData = await commitRes.json();
+        const baseTreeSha = commitData.tree.sha;
+
+        // Create blobs for all files (Single Commit = Only 1 Workflow Run!)
+        const treeItems = [];
+        for (const [path, content] of Object.entries(proj)) {
+          if (path === 'icons') continue;
+          const bRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/blobs`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ content: toBase64Utf8(content), encoding: 'base64' })
+          });
+          const bData = await bRes.json();
+          treeItems.push({ path, mode: '100644', type: 'blob', sha: bData.sha });
+        }
+
+        for (const [path, b64] of Object.entries(proj.icons)) {
+          const bRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/blobs`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ content: b64, encoding: 'base64' })
+          });
+          const bData = await bRes.json();
+          treeItems.push({ path, mode: '100644', type: 'blob', sha: bData.sha });
+        }
+
+        updateProgress(55, 'جاري إرسال الحزمة الموحدة إلى خادم البناء...');
+        const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ base_tree: baseTreeSha, tree: treeItems })
+        });
+        const treeData = await treeRes.json();
+
+        const newCommitRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/commits`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            message: 'Build Android APK (Single Unified Commit)',
+            tree: treeData.sha,
+            parents: [latestCommitSha]
+          })
+        });
+        const newCommitData = await newCommitRes.json();
+
+        await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ sha: newCommitData.sha, force: true })
+        });
+
+        logMsg(`Single commit pushed (${newCommitData.sha.substring(0, 7)}). Waiting for build to finish...`);
+        updateProgress(68, 'جاري ترجمة وتوقيع ملف APK على خوادم GitHub (انتظر حوالي دقيقة)...');
+
+        // Poll workflow run automatically
+        await new Promise(r => setTimeout(r, 5000));
+        let finishedRun = null;
+        for (let attempt = 1; attempt <= 45; attempt++) {
+          const runsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/runs?head_sha=${newCommitData.sha}`, { headers });
+          const runsData = await runsRes.json();
+          const run = runsData.workflow_runs && runsData.workflow_runs[0];
+          if (run) {
+            logMsg(`Build status: ${run.status} (${attempt * 5}s elapsed)...`);
+            if (run.status === 'completed') {
+              if (run.conclusion === 'success') {
+                finishedRun = run;
+                break;
+              } else {
+                throw new Error('فشل البناء على الخادم، راجع سجل الأخطاء');
+              }
+            }
+          }
+          const p = Math.min(92, 68 + Math.round(attempt * 0.6));
+          updateProgress(p, `جاري بناء وتوقيع ملف الـ APK حالياً (${p}%)...`);
+          await new Promise(r => setTimeout(r, 5000));
+        }
+
+        if (!finishedRun) {
+          throw new Error('استغرق البناء وقتاً أطول من المعتاد، يمكنك التحقق من صفحة Releases');
+        }
+
+        updateProgress(96, 'اكتمل البناء! جاري سحب ملف الـ APK وفك ضغطه لتنزيله مباشرة...');
+        const artRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/runs/${finishedRun.id}/artifacts`, { headers });
+        const artData = await artRes.json();
+        const artifact = artData.artifacts && artData.artifacts[0];
+
+        if (artifact) {
+          const zipDownloadRes = await fetch(artifact.archive_download_url, {
+            headers: { 'Authorization': `token ${token}` }
+          });
+          const zipArrayBuffer = await zipDownloadRes.arrayBuffer();
+          const loadedZip = await JSZip.loadAsync(zipArrayBuffer);
+          const apkEntry = Object.values(loadedZip.files).find(f => f.name.endsWith('.apk'));
+          if (apkEntry) {
+            const apkBlob = await apkEntry.async('blob');
+            if (compiledApkBlobUrl) URL.revokeObjectURL(compiledApkBlobUrl);
+            compiledApkBlobUrl = URL.createObjectURL(apkBlob);
+          }
+        }
+
+        updateProgress(100, 'ملف الـ APK جاهز للتنزيل المباشر الآن!');
+        document.getElementById('buildSpinner').classList.add('hidden');
+        document.getElementById('releaseFallbackLink').href = `https://github.com/${owner}/${repo}/releases/tag/latest-apk`;
+        document.getElementById('directDownloadPanel').classList.remove('hidden');
+        toast('🎉 تطبيقك جاهز! اضغط زر التنزيل الأخضر لتحميل الـ APK مباشرة');
+
+      } catch (err) {
+        document.getElementById('buildSpinner').classList.add('hidden');
+        logMsg('ERROR: ' + err.message);
+        toast(err.message, true);
+      }
+    });
+
+    document.getElementById('downloadDirectApkBtn').addEventListener('click', () => {
+      if (!compiledApkBlobUrl) {
+        window.open(document.getElementById('releaseFallbackLink').href, '_blank');
+        return;
+      }
+      const cleanName = (document.getElementById('appName').value || 'App').trim().replace(/\s+/g, '_');
+      const a = document.createElement('a');
+      a.href = compiledApkBlobUrl;
+      a.download = `${cleanName}.apk`;
+      a.click();
+    });
+
+    // Init
+    const savedTok = localStorage.getItem('w2a_gh_token');
+    if (savedTok) document.getElementById('ghToken').value = savedTok;
+    renderIconCanvas();
+  </script>
+</body>
+</html>
